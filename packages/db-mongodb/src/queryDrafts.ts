@@ -6,6 +6,7 @@ import { buildVersionCollectionFields, combineQueries, flattenWhereToOperators }
 import type { MongooseAdapter } from './index.js'
 
 import { buildSortParam } from './queries/buildSortParam.js'
+import { aggregatePaginate } from './utilities/aggregatePaginate.js'
 import { buildJoinAggregation } from './utilities/buildJoinAggregation.js'
 import { buildProjectionFromSelect } from './utilities/buildProjectionFromSelect.js'
 import { getSession } from './utilities/getSession.js'
@@ -113,10 +114,20 @@ export const queryDrafts: QueryDrafts = async function queryDrafts(
 
   // build join aggregation
   if (aggregate) {
-    result = await VersionModel.aggregatePaginate(
-      VersionModel.aggregate(aggregate),
-      paginationOptions,
-    )
+    result = await aggregatePaginate({
+      adapter: this,
+      collation: paginationOptions.collation,
+      joinAggregation: aggregate,
+      limit: paginationOptions.limit,
+      Model: VersionModel,
+      page: paginationOptions.page,
+      pagination: paginationOptions.pagination,
+      projection: paginationOptions.projection,
+      query: versionQuery,
+      session: paginationOptions.options?.session,
+      sort: paginationOptions.sort as object,
+      useEstimatedCount: paginationOptions.useEstimatedCount,
+    })
   } else {
     result = await VersionModel.paginate(versionQuery, paginationOptions)
   }
