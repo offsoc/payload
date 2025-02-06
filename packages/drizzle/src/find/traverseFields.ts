@@ -476,6 +476,13 @@ export const traverseFields = ({
 
           currentQuery = currentQuery.orderBy(sortOrder(sql`"sortPath"`)) as SQLSelect
 
+          if (page && limit !== 0) {
+            const offset = (page - 1) * limit - 1
+            if (offset > 0) {
+              currentQuery = currentQuery.offset(offset) as SQLSelect
+            }
+          }
+
           if (limit) {
             currentQuery = currentQuery.limit(limit) as SQLSelect
           }
