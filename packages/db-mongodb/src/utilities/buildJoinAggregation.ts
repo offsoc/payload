@@ -77,6 +77,7 @@ export const buildJoinAggregation = async ({
 
     const {
       limit: limitJoin = join.field.defaultLimit ?? 10,
+      page,
       sort: sortJoin = join.field.defaultSort || collectionConfig.defaultSort,
       where: whereJoin,
     } = joins?.[join.joinPath] || {}
@@ -151,7 +152,8 @@ export const buildJoinAggregation = async ({
               },
             },
             {
-              $limit: limitJoin,
+              // Unfortunately, we can't use $skip here because we can lose data, instead we do $slice then
+              $limit: page ? page * limitJoin : limitJoin,
             },
             {
               $project: {
@@ -188,10 +190,12 @@ export const buildJoinAggregation = async ({
       },
     })
 
+    const sliceValue = page ? [limitJoin] : [(page - 1) * limitJoin, limitJoin]
+
     aggregate.push({
       $set: {
         [`${as}.docs`]: {
-          $slice: [`$${as}.docs`, limitJoin],
+          $slice: [`$${as}.docs`, ...sliceValue],
         },
       },
     })
