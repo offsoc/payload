@@ -193,7 +193,8 @@ export const buildTableState = async (
 
       for (let i = 0; i < segments.length; i++) {
         if (i === segments.length - 1) {
-          docs = parentDoc[segments[i]].docs
+          data = parentDoc[segments[i]]
+          docs = data.docs
         } else {
           parentDoc = parentDoc[segments[i]]
         }
@@ -209,9 +210,8 @@ export const buildTableState = async (
         user: req.user,
         where: query?.where,
       })
+      docs = data.docs
     }
-
-    docs = data.docs
   }
 
   const { columnState, Table } = renderTable({
@@ -226,10 +226,16 @@ export const buildTableState = async (
     payload,
     renderRowTypes,
     tableAppearance,
-    useAsTitle: collectionConfig.admin.useAsTitle,
+    useAsTitle: 'title',
   })
 
-  const renderedFilters = renderFilters(collectionConfig.fields, req.payload.importMap)
+  console.log(data)
+
+  let renderedFilters
+
+  if (collectionConfig) {
+    renderedFilters = renderFilters(collectionConfig.fields, req.payload.importMap)
+  }
 
   return {
     data,

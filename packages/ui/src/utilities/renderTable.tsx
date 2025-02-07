@@ -158,8 +158,15 @@ export const renderTable = ({
         hidden: true,
       },
       Heading: i18n.t('version:type'),
-      renderedCells: docs.map((_, i) => (
-        <Pill key={i}>{getTranslation(clientCollectionConfig.labels.singular, i18n)}</Pill>
+      renderedCells: docs.map((doc, i) => (
+        <Pill key={i}>
+          {getTranslation(
+            collections
+              ? payload.collections[doc.relationTo].config.labels.singular
+              : clientCollectionConfig.labels.singular,
+            i18n,
+          )}
+        </Pill>
       )),
     } as Column)
   }
