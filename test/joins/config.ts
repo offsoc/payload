@@ -228,11 +228,15 @@ export default buildConfigWithDefaults({
           name: 'children',
           collection: ['multiple-collections-1', 'multiple-collections-2'],
           on: 'parent',
+          admin: {
+            defaultColumns: ['title', 'name', 'description'],
+          },
         },
       ],
     },
     {
       slug: 'multiple-collections-1',
+      admin: { useAsTitle: 'title' },
       fields: [
         {
           type: 'relationship',
@@ -243,10 +247,15 @@ export default buildConfigWithDefaults({
           name: 'title',
           type: 'text',
         },
+        {
+          name: 'name',
+          type: 'text',
+        },
       ],
     },
     {
       slug: 'multiple-collections-2',
+      admin: { useAsTitle: 'title' },
       fields: [
         {
           type: 'relationship',
@@ -255,6 +264,72 @@ export default buildConfigWithDefaults({
         },
         {
           name: 'title',
+          type: 'text',
+        },
+        {
+          name: 'description',
+          type: 'text',
+        },
+      ],
+    },
+
+    {
+      slug: 'folders',
+      fields: [
+        {
+          type: 'relationship',
+          relationTo: 'folders',
+          name: 'folder',
+        },
+        {
+          name: 'title',
+          type: 'text',
+        },
+        {
+          type: 'join',
+          name: 'children',
+          collection: ['folders', 'example-pages', 'example-posts'],
+          on: 'folder',
+          admin: {
+            defaultColumns: ['title', 'name', 'description'],
+          },
+        },
+      ],
+    },
+    {
+      slug: 'example-pages',
+      admin: { useAsTitle: 'title' },
+      fields: [
+        {
+          type: 'relationship',
+          relationTo: 'folders',
+          name: 'folder',
+        },
+        {
+          name: 'title',
+          type: 'text',
+        },
+        {
+          name: 'name',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      slug: 'example-posts',
+      admin: { useAsTitle: 'title' },
+      fields: [
+        {
+          type: 'relationship',
+          relationTo: 'folders',
+          name: 'folder',
+        },
+        {
+          name: 'title',
+          type: 'text',
+        },
+        {
+          name: 'description',
           type: 'text',
         },
       ],

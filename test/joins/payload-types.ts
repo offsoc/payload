@@ -32,6 +32,9 @@ export interface Config {
     'multiple-collections-parents': MultipleCollectionsParent;
     'multiple-collections-1': MultipleCollections1;
     'multiple-collections-2': MultipleCollections2;
+    folders: Folder;
+    'example-pages': ExamplePage;
+    'example-posts': ExamplePost;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -82,9 +85,6 @@ export interface Config {
     'depth-joins-2': {
       joins: 'depth-joins-1';
     };
-    'multiple-collections-parents': {
-      children: 'multiple-collections-2';
-    };
   };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
@@ -108,6 +108,9 @@ export interface Config {
     'multiple-collections-parents': MultipleCollectionsParentsSelect<false> | MultipleCollectionsParentsSelect<true>;
     'multiple-collections-1': MultipleCollections1Select<false> | MultipleCollections1Select<true>;
     'multiple-collections-2': MultipleCollections2Select<false> | MultipleCollections2Select<true>;
+    folders: FoldersSelect<false> | FoldersSelect<true>;
+    'example-pages': ExamplePagesSelect<false> | ExamplePagesSelect<true>;
+    'example-posts': ExamplePostsSelect<false> | ExamplePostsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -560,6 +563,7 @@ export interface MultipleCollections1 {
   id: string;
   parent?: (string | null) | MultipleCollectionsParent;
   title?: string | null;
+  name?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -571,6 +575,61 @@ export interface MultipleCollections2 {
   id: string;
   parent?: (string | null) | MultipleCollectionsParent;
   title?: string | null;
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "folders".
+ */
+export interface Folder {
+  id: string;
+  folder?: (string | null) | Folder;
+  title?: string | null;
+  children?: {
+    docs?:
+      | (
+          | {
+              relationTo?: 'folders';
+              value: string | Folder;
+            }
+          | {
+              relationTo?: 'example-pages';
+              value: string | ExamplePage;
+            }
+          | {
+              relationTo?: 'example-posts';
+              value: string | ExamplePost;
+            }
+        )[]
+      | null;
+    hasNextPage?: boolean | null;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "example-pages".
+ */
+export interface ExamplePage {
+  id: string;
+  folder?: (string | null) | Folder;
+  title?: string | null;
+  name?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "example-posts".
+ */
+export interface ExamplePost {
+  id: string;
+  folder?: (string | null) | Folder;
+  title?: string | null;
+  description?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -664,6 +723,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'multiple-collections-2';
         value: string | MultipleCollections2;
+      } | null)
+    | ({
+        relationTo: 'folders';
+        value: string | Folder;
+      } | null)
+    | ({
+        relationTo: 'example-pages';
+        value: string | ExamplePage;
+      } | null)
+    | ({
+        relationTo: 'example-posts';
+        value: string | ExamplePost;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -976,6 +1047,7 @@ export interface MultipleCollectionsParentsSelect<T extends boolean = true> {
 export interface MultipleCollections1Select<T extends boolean = true> {
   parent?: T;
   title?: T;
+  name?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -986,6 +1058,40 @@ export interface MultipleCollections1Select<T extends boolean = true> {
 export interface MultipleCollections2Select<T extends boolean = true> {
   parent?: T;
   title?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "folders_select".
+ */
+export interface FoldersSelect<T extends boolean = true> {
+  folder?: T;
+  title?: T;
+  children?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "example-pages_select".
+ */
+export interface ExamplePagesSelect<T extends boolean = true> {
+  folder?: T;
+  title?: T;
+  name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "example-posts_select".
+ */
+export interface ExamplePostsSelect<T extends boolean = true> {
+  folder?: T;
+  title?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }

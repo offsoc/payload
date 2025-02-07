@@ -166,11 +166,9 @@ const JoinFieldComponent: JoinFieldClientComponent = (props) => {
   }, [docID, collection, field.targetField.relationTo, field.where, on, docConfig?.slug])
 
   const initialDrawerData = useMemo(() => {
-    if (Array.isArray(field.collection)) {
-      return {}
-    }
-
-    const relatedCollection = getEntityConfig({ collectionSlug: field.collection })
+    const relatedCollection = getEntityConfig({
+      collectionSlug: Array.isArray(field.collection) ? field.collection[0] : field.collection,
+    })
 
     return getInitialDrawerData({
       collectionSlug: docConfig?.slug,

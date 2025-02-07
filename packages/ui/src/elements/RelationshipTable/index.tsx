@@ -1,21 +1,16 @@
 'use client'
-import type {
-  ClientCollectionConfig,
-  CollectionSlug,
-  JoinFieldClient,
-  ListQuery,
-  PaginatedDocs,
-  Where,
-} from 'payload'
+import type { CollectionSlug, JoinFieldClient, ListQuery, PaginatedDocs, Where } from 'payload'
 
 import { getTranslation } from '@payloadcms/translations'
 import React, { Fragment, useCallback, useState } from 'react'
 
 import type { DocumentDrawerProps } from '../DocumentDrawer/types.js'
+import type { Option } from '../ReactSelect/types.js'
 import type { Column } from '../Table/index.js'
 
 import { Button } from '../../elements/Button/index.js'
 import { Pill } from '../../elements/Pill/index.js'
+import { SelectInput } from '../../fields/Select/Input.js'
 import { useIgnoredEffect } from '../../hooks/useIgnoredEffect.js'
 import { ChevronIcon } from '../../icons/Chevron/index.js'
 import { useAuth } from '../../providers/Auth/index.js'
@@ -26,10 +21,10 @@ import { useTranslation } from '../../providers/Translation/index.js'
 import { hoistQueryParamsToAnd } from '../../utilities/mergeListSearchAndWhere.js'
 import { AnimateHeight } from '../AnimateHeight/index.js'
 import { ColumnSelector } from '../ColumnSelector/index.js'
+import './index.scss'
 import { useDocumentDrawer } from '../DocumentDrawer/index.js'
 import { RelationshipProvider } from '../Table/RelationshipProvider/index.js'
 import { TableColumnsProvider } from '../TableColumns/index.js'
-import './index.scss'
 import { DrawerLink } from './cells/DrawerLink/index.js'
 import { RelationshipTablePagination } from './Pagination.js'
 
@@ -68,7 +63,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
     relationTo,
   } = props
   const [Table, setTable] = useState<React.ReactNode>(null)
-  const { getEntityConfig } = useConfig()
+  const { config, getEntityConfig } = useConfig()
 
   const { permissions } = useAuth()
 
@@ -100,6 +95,9 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
 
   const [collectionConfig] = useState(() => getEntityConfig({ collectionSlug: relationTo }))
 
+  const [selectedCollection, setSelectedCollection] = useState(
+    Array.isArray(relationTo) ? relationTo[0] : relationTo,
+  )
   const [isLoadingTable, setIsLoadingTable] = useState(!disableTable)
   const [data, setData] = useState<PaginatedDocs>(initialData)
   const [columnState, setColumnState] = useState<Column[]>()
@@ -142,7 +140,6 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
         tableAppearance: 'condensed',
       })
 
-      console.log(NewTable)
       setData(newData)
       setTable(NewTable)
       setColumnState(newColumnState)
@@ -173,7 +170,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
   )
 
   const [DocumentDrawer, DocumentDrawerToggler, { closeDrawer, openDrawer }] = useDocumentDrawer({
-    collectionSlug: Array.isArray(relationTo) ? relationTo[0] : relationTo,
+    collectionSlug: selectedCollection,
   })
 
   const onDrawerSave = useCallback<DocumentDrawerProps['onSave']>(
@@ -226,6 +223,22 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
               {i18n.t('fields:addNew')}
             </DocumentDrawerToggler>
           )}
+          {Array.isArray(relationTo) && (
+            <SelectInput
+              isClearable={false}
+              name="selectCollection"
+              onChange={(opt) => setSelectedCollection((opt as Option).value as string)}
+              options={relationTo.map((collection) => ({
+                label: getTranslation(
+                  config.collections.find((each) => each.slug === collection).labels.singular,
+                  i18n,
+                ),
+                value: collection,
+              }))}
+              path="selectCollection"
+              value={selectedCollection}
+            />
+          )}
           <Pill
             aria-controls={`${baseClass}-columns`}
             aria-expanded={openColumnSelector}
@@ -261,7 +274,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
               )}
             </div>
           )}
-          {data?.docs && data.docs.length > 0 && (
+          {data.docs && data.docs.length > 0 && (
             <RelationshipProvider>
               <ListQueryProvider
                 data={data}

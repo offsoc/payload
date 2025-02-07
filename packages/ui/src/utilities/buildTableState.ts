@@ -6,6 +6,7 @@ import type {
   ListPreferences,
   PaginatedDocs,
   SanitizedCollectionConfig,
+  Where,
 } from 'payload'
 
 import { APIError, formatErrors } from 'payload'
@@ -139,19 +140,17 @@ export const buildTableState = async (
     }
   }
 
-  let listPreferences: ListPreferences
-
-  if (!Array.isArray(collectionSlug)) {
-    listPreferences = await upsertPreferences<ListPreferences>({
-      key: `${collectionSlug}-list`,
-      req,
-      value: {
-        columns,
-        limit: isNumber(query?.limit) ? Number(query.limit) : undefined,
-        sort: query?.sort as string,
-      },
-    })
-  }
+  const listPreferences = await upsertPreferences<ListPreferences>({
+    key: Array.isArray(collectionSlug)
+      ? `${parent.collectionSlug}-${parent.joinPath}`
+      : `${collectionSlug}-list`,
+    req,
+    value: {
+      columns,
+      limit: isNumber(query?.limit) ? Number(query.limit) : undefined,
+      sort: query?.sort as string,
+    },
+  })
 
   let docs = docsFromArgs
   let data: PaginatedDocs
@@ -174,17 +173,27 @@ export const buildTableState = async (
         currentSelectRef = currentSelectRef[segments[i]]
       }
 
+      const joinQuery: { limit?: number; page?: number; sort?: string; where?: Where } = {
+        sort: query?.sort as string,
+        where: query?.where,
+      }
+
+      if (query) {
+        if (!Number.isNaN(Number(query.limit))) {
+          joinQuery.limit = Number(query.limit)
+        }
+
+        if (!Number.isNaN(Number(query.page))) {
+          joinQuery.limit = Number(query.limit)
+        }
+      }
+
       let parentDoc = await payload.findByID({
         id: parent.id,
         collection: parent.collectionSlug,
         depth: 1,
         joins: {
-          [parent.joinPath]: {
-            // limit: query?.limit ? parseInt(query.limit, 10) : undefined,
-            // page: query?.page ? parseInt(query.page, 10) : undefined,
-            // sort: query?.sort as string,
-            // where: query?.where,
-          },
+          [parent.joinPath]: joinQuery,
         },
         overrideAccess: false,
         select,
@@ -219,17 +228,17 @@ export const buildTableState = async (
     clientConfig,
     collectionConfig,
     collections: Array.isArray(collectionSlug) ? collectionSlug : undefined,
-    columnPreferences: undefined, // TODO, might not be neededcolumns,
+    columnPreferences: Array.isArray(collectionSlug) ? listPreferences?.columns : undefined, // TODO, might not be neededcolumns,
     docs,
     enableRowSelections,
     i18n: req.i18n,
     payload,
     renderRowTypes,
     tableAppearance,
-    useAsTitle: 'title',
+    useAsTitle: Array.isArray(collectionSlug)
+      ? payload.collections[collectionSlug[0]]?.config?.admin?.useAsTitle
+      : collectionConfig?.admin?.useAsTitle,
   })
-
-  console.log(data)
 
   let renderedFilters
 

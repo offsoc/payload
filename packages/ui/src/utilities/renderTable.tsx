@@ -104,7 +104,14 @@ export const renderTable = ({
       }
     }
 
-    const columns = getInitialColumns(fields, useAsTitle, [])
+    const columns = columnsFromArgs
+      ? columnsFromArgs?.filter((column) =>
+          flattenTopLevelFields(clientCollectionConfig.fields, true)?.some(
+            (field) => 'name' in field && field.name === column.accessor,
+          ),
+        )
+      : getInitialColumns(fields, useAsTitle, [])
+
     columnState = buildPolymorphicColumnState({
       columnPreferences,
       columns,
