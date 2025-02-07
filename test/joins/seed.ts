@@ -116,6 +116,30 @@ export const seed = async (_payload) => {
       category: restrictedCategory.id,
     },
   })
+
+  const parent = await _payload.create({
+    collection: 'multiple-collections-parents',
+    depth: 0,
+    data: {},
+  })
+
+  const child_1 = await _payload.create({
+    collection: 'multiple-collections-1',
+    depth: 0,
+    data: {
+      parent,
+      title: 'doc-1',
+    },
+  })
+
+  const child_2 = await _payload.create({
+    collection: 'multiple-collections-2',
+    depth: 0,
+    data: {
+      parent,
+      title: 'doc-2',
+    },
+  })
 }
 
 export async function clearAndSeedEverything(_payload: Payload) {

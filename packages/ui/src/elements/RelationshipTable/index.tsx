@@ -1,6 +1,7 @@
 'use client'
 import type {
   ClientCollectionConfig,
+  CollectionSlug,
   JoinFieldClient,
   ListQuery,
   PaginatedDocs,
@@ -44,7 +45,12 @@ type RelationshipTableComponentProps = {
   readonly initialData?: PaginatedDocs
   readonly initialDrawerData?: DocumentDrawerProps['initialData']
   readonly Label?: React.ReactNode
-  readonly relationTo: string
+  readonly parent?: {
+    collectionSlug: CollectionSlug
+    id: number | string
+    joinPath: string
+  }
+  readonly relationTo: string | string[]
 }
 
 export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (props) => {
@@ -58,6 +64,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
     initialData: initialDataFromProps,
     initialDrawerData,
     Label,
+    parent,
     relationTo,
   } = props
   const [Table, setTable] = useState<React.ReactNode>(null)
@@ -102,8 +109,8 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
   const renderTable = useCallback(
     async (docs?: PaginatedDocs['docs']) => {
       const newQuery: ListQuery = {
-        limit: String(field.defaultLimit || collectionConfig.admin.pagination.defaultLimit),
-        sort: field.defaultSort || collectionConfig.defaultSort,
+        limit: String(field?.defaultLimit || collectionConfig?.admin?.pagination?.defaultLimit),
+        sort: field.defaultSort || collectionConfig?.defaultSort,
         ...(query || {}),
         where: { ...(query?.where || {}) },
       }
@@ -129,6 +136,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
         columns: defaultColumns,
         docs,
         enableRowSelections: false,
+        parent,
         query: newQuery,
         renderRowTypes: true,
         tableAppearance: 'condensed',
@@ -143,12 +151,13 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
       field.defaultLimit,
       field.defaultSort,
       field.admin.defaultColumns,
-      collectionConfig.admin.pagination.defaultLimit,
-      collectionConfig.defaultSort,
+      collectionConfig?.admin?.pagination?.defaultLimit,
+      collectionConfig?.defaultSort,
       query,
       filterOptions,
       getTableState,
       relationTo,
+      parent,
     ],
   )
 
@@ -163,7 +172,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
   )
 
   const [DocumentDrawer, DocumentDrawerToggler, { closeDrawer, openDrawer }] = useDocumentDrawer({
-    collectionSlug: relationTo,
+    collectionSlug: Array.isArray(relationTo) ? relationTo[0] : relationTo,
   })
 
   const onDrawerSave = useCallback<DocumentDrawerProps['onSave']>(
@@ -200,9 +209,11 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
     [data.docs, renderTable],
   )
 
-  const preferenceKey = `${relationTo}-list`
+  const preferenceKey = `${Array.isArray(relationTo) ? `${parent.collectionSlug}-${parent.joinPath}` : relationTo}-list`
 
-  const canCreate = allowCreate !== false && permissions?.collections?.[relationTo]?.create
+  const canCreate =
+    allowCreate !== false &&
+    permissions?.collections?.[Array.isArray(relationTo) ? relationTo[0] : relationTo]?.create
 
   return (
     <div className={baseClass}>

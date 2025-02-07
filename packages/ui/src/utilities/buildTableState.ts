@@ -8,7 +8,7 @@ import type {
   SanitizedCollectionConfig,
 } from 'payload'
 
-import { formatErrors } from 'payload'
+import { APIError, formatErrors } from 'payload'
 import { isNumber } from 'payload/shared'
 
 import type { Column } from '../elements/Table/index.js'
@@ -74,6 +74,7 @@ export const buildTableState = async (
     columns,
     docs: docsFromArgs,
     enableRowSelections,
+    parent,
     query,
     renderRowTypes,
     req,
@@ -129,22 +130,28 @@ export const buildTableState = async (
   let collectionConfig: SanitizedCollectionConfig
   let clientCollectionConfig: ClientCollectionConfig
 
-  if (req.payload.collections[collectionSlug]) {
-    collectionConfig = req.payload.collections[collectionSlug].config
-    clientCollectionConfig = clientConfig.collections.find(
-      (collection) => collection.slug === collectionSlug,
-    )
+  if (!Array.isArray(collectionSlug)) {
+    if (req.payload.collections[collectionSlug]) {
+      collectionConfig = req.payload.collections[collectionSlug].config
+      clientCollectionConfig = clientConfig.collections.find(
+        (collection) => collection.slug === collectionSlug,
+      )
+    }
   }
 
-  const listPreferences = await upsertPreferences<ListPreferences>({
-    key: `${collectionSlug}-list`,
-    req,
-    value: {
-      columns,
-      limit: isNumber(query?.limit) ? Number(query.limit) : undefined,
-      sort: query?.sort as string,
-    },
-  })
+  let listPreferences: ListPreferences
+
+  if (!Array.isArray(collectionSlug)) {
+    listPreferences = await upsertPreferences<ListPreferences>({
+      key: `${collectionSlug}-list`,
+      req,
+      value: {
+        columns,
+        limit: isNumber(query?.limit) ? Number(query.limit) : undefined,
+        sort: query?.sort as string,
+      },
+    })
+  }
 
   let docs = docsFromArgs
   let data: PaginatedDocs
@@ -152,25 +159,67 @@ export const buildTableState = async (
   // lookup docs, if desired, i.e. within `join` field which initialize with `depth: 0`
 
   if (!docs || query) {
-    data = await payload.find({
-      collection: collectionSlug,
-      depth: 0,
-      limit: query?.limit ? parseInt(query.limit, 10) : undefined,
-      overrideAccess: false,
-      page: query?.page ? parseInt(query.page, 10) : undefined,
-      sort: query?.sort,
-      user: req.user,
-      where: query?.where,
-    })
+    if (Array.isArray(collectionSlug)) {
+      if (!parent) {
+        throw new APIError('Unexpected array of collectionSlug, parent must be providen')
+      }
+
+      const select = {}
+      let currentSelectRef = select
+
+      const segments = parent.joinPath.split('.')
+
+      for (let i = 0; i < segments.length; i++) {
+        currentSelectRef[segments[i]] = i === segments.length - 1 ? true : {}
+        currentSelectRef = currentSelectRef[segments[i]]
+      }
+
+      let parentDoc = await payload.findByID({
+        id: parent.id,
+        collection: parent.collectionSlug,
+        depth: 1,
+        joins: {
+          [parent.joinPath]: {
+            // limit: query?.limit ? parseInt(query.limit, 10) : undefined,
+            // page: query?.page ? parseInt(query.page, 10) : undefined,
+            // sort: query?.sort as string,
+            // where: query?.where,
+          },
+        },
+        overrideAccess: false,
+        select,
+        user: req.user,
+      })
+
+      for (let i = 0; i < segments.length; i++) {
+        if (i === segments.length - 1) {
+          docs = parentDoc[segments[i]].docs
+        } else {
+          parentDoc = parentDoc[segments[i]]
+        }
+      }
+    } else {
+      data = await payload.find({
+        collection: collectionSlug,
+        depth: 0,
+        limit: query?.limit ? parseInt(query.limit, 10) : undefined,
+        overrideAccess: false,
+        page: query?.page ? parseInt(query.page, 10) : undefined,
+        sort: query?.sort,
+        user: req.user,
+        where: query?.where,
+      })
+    }
 
     docs = data.docs
   }
 
   const { columnState, Table } = renderTable({
     clientCollectionConfig,
+    clientConfig,
     collectionConfig,
-    columnPreferences: undefined, // TODO, might not be needed
-    columns,
+    collections: Array.isArray(collectionSlug) ? collectionSlug : undefined,
+    columnPreferences: undefined, // TODO, might not be neededcolumns,
     docs,
     enableRowSelections,
     i18n: req.i18n,
